@@ -1,0 +1,22 @@
+Assignment 4
+Executive Summary 
+TCSS 558: Applied Distributed Systems, Spring 2013
+
+
+Assignment Overview
+
+The purpose of this assignment was to extend the functionality of the Chord implementation that was completed in Homework 4. Specifically, the added functionality that needed to be included was the ability for nodes to join or exit a Chord network; storing and retrieving data from the network by making RMI calls on one of the nodes in the network; and logging messages and changes to the network.
+
+Technical Impression
+
+Dan devised a GUI to visualize and test the state of the network so we could see some of the changes being made as the network was updated. We had made a lot of preparation for the communication between nodes in the previous homework, so some of the infrastructure already existed to facilitate nodes joining and leaving. We added a number of tests to make sure the functions of the Chord network worked as intended, which helped our confidence in the implementation.
+
+We corrected some problems that we had in the previous assignment with sharing the project. For an unknown reason, our Eclipse projects produced errors when shared over git; this time we were able to address the problem early and didn't run into any further issues. We added packages as necessary to manage the increasing complexity of the network and structure our code.
+
+Dan discovered a bug from the previous homework with the way that the integer range for the size of the network was being calculated. Our previous tests had not uncovered the problem, but additional testing in this homework did. We were able to incorporate the fix into the new code and resolve the issue.
+
+Later, we discovered some other bugs that cropped up during the process of a node leaving the network. RMI appeared to be consuming all network connections when a node left the network, causing crashes. We traced the bug down to a couple of methods but were unable to determine exactly what was causing the issue. Eventually we revisited (and rewrote) a significant chunk of the code and were able to resolve a number of the problems with the network stability.
+
+Team Report
+
+We split up the work this time around with Dan working on nodes joining and exiting the network; Sven working on updating the logging functionality and updating the design doc based on our changes; and Jesse working on storage and retrieval of data in the network and drafting the executive summary. We worked remotely over the holiday and kept in communication via email. We also tracked project task updates using the Trello app. We ended up all being scattered out of town for the Thanksgiving holiday which made some of the communication difficult, but we managed reasonably well. Jesse and Sven both dealt with some illness as well.
