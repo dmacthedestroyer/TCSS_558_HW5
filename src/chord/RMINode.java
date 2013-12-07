@@ -184,9 +184,13 @@ public class RMINode implements RMINodeServer, RMINodeState {
 			checkHasNodeLeft();
 			try {
 				RMINodeServer server = findSuccessor(key);
-				if (nodeKey == server.getNodeKey())
+				if (nodeKey == server.getNodeKey()) {
 					nodeStorage.put(key, value);
-				else
+					try {
+						fingerTable.getSuccessor().getNode().backup(key, value);
+					} catch (Throwable t) {
+					}
+				} else
 					server.put(key, value);
 			} catch (NullPointerException | RemoteException e) {
 				// some node somewhere is dead... wait a while for our fingers to
@@ -209,6 +213,13 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	@Override
 	public void put(String key, Serializable value) throws RemoteException {
 		put(new KeyHash<String>(key, hashLength).getHash(), value);
+	}
+
+	@Override
+	public void backup(long key, Serializable value) throws RemoteException {
+		checkHasNodeLeft();
+
+		nodeStorage.put(key, value);
 	}
 
 	/**
@@ -302,6 +313,12 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		try {
 			if (ringRange.isInRange(false, predecessor.getNodeKey(), potentialPredecessorNodeKey, nodeKey, false)) {
 				predecessor = potentialPredecessor;
+				// we're only responsible for our own values, and our predecessor's
+				// values. Prune out the rest.
+				long predecessor_predecessorKey = potentialPredecessor.getPredecessor().getNodeKey();
+				for (Long key : nodeStorage.keySet())
+					if (ringRange.isInRange(false, nodeKey, key, predecessor_predecessorKey, true))
+						nodeStorage.remove(key);
 			}
 		} catch (NullPointerException | RemoteException e) {
 			predecessor = potentialPredecessor;
@@ -334,6 +351,19 @@ public class RMINode implements RMINodeServer, RMINodeState {
 			RMINodeServer successor_predecessor = successor.getPredecessor();
 			if (successor_predecessor != null && ringRange.isInRange(false, nodeKey, successor_predecessor.getNodeKey(), successorNodeKey, false))
 				fingerTable.getSuccessor().setNode(successor_predecessor);
+			long predecessorKey;
+			try {
+				predecessorKey = predecessor.getNodeKey();
+			} catch (Throwable t) {
+				predecessorKey = nodeKey;
+			}
+			// we need to forward all values we're responsible for to our new
+			// successor, for them to store as a backup
+			for (Long key : nodeStorage.keySet()) {
+				if (ringRange.isInRange(false, predecessorKey, key, nodeKey, true)) {
+					successor_predecessor.backup(key, nodeStorage.get(key));
+				}
+			}
 		} catch (RemoteException e) {
 		}
 
