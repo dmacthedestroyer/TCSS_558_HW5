@@ -134,7 +134,6 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	@Override
 	public void leave() throws RemoteException {
 		hasNodeLeft = true;
-		forwardDataToSuccessor();
 		logger.logOutput("Left network and forwarded data to successor");
 	}
 
@@ -302,92 +301,9 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		try {
 			if (ringRange.isInRange(false, predecessor.getNodeKey(), potentialPredecessorNodeKey, nodeKey, false)) {
 				predecessor = potentialPredecessor;
-				forwardDataToPredecessor();
 			}
 		} catch (NullPointerException | RemoteException e) {
 			predecessor = potentialPredecessor;
-			forwardDataToPredecessor();
-		}
-	}
-
-	/**
-	 * When the predecessor changes, this function forwards values the new
-	 * predecessor should manage now.
-	 * 
-	 * @param predecessor
-	 * @throws RemoteException
-	 */
-	public void forwardDataToPredecessor() {
-		try {
-			long predecessorNodeKey = predecessor.getNodeKey();
-			for (Long key : nodeStorage.keySet())
-				if (ringRange.isInRange(false, nodeKey, key, predecessorNodeKey, true)) {
-					predecessor.put(key, nodeStorage.remove(key));
-					logger.logOutput("Moving data to predecessor with key " + key);
-				}
-		} catch (RemoteException r) {
-			// node doesn't exist... This means the predecessor JUST crashed.
-			// f*$k it, let's go bowling.
-		}
-	}
-
-	/**
-	 * When the node gracefully leaves, this puts all data to the successor, who
-	 * now controls it.
-	 * 
-	 * @param successor
-	 * @throws RemoteException
-	 */
-
-	public void forwardDataToSuccessor() {
-		RMINodeServer successor = null;
-		// find the first finger that's not us
-		for (Finger f : fingerTable)
-			try {
-				if (f.getNode().getNodeKey() != nodeKey)
-					successor = f.getNode();
-				break;
-			} catch (NullPointerException | RemoteException e) {
-			}
-
-		// no point in doing anything if we're our own successor
-		if (successor == null)
-			return;
-
-		try {
-			for (Long key : nodeStorage.keySet()) {
-				successor.put(key, nodeStorage.remove(key));
-				logger.logOutput("Moving data to successor with key " + key);
-			}
-		} catch (NullPointerException | RemoteException r) {
-			// node doesn't exist, so do nothing...
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void nodeLeaving(long leavingNodeKey) throws RemoteException {
-		checkHasNodeLeft();
-
-		try {
-			if (predecessor.getNodeKey() == leavingNodeKey)
-				predecessor = null;
-			logger.logOutput("Node " + leavingNodeKey + " leaving");
-		} catch (NullPointerException | RemoteException e) {
-			logger.logOutput(e.getMessage());
-			predecessor = null;
-		}
-
-		for (Finger f : fingerTable) {
-			try {
-				if (f.getNode().getNodeKey() == leavingNodeKey)
-					f.setNode(f.getStart() == fingerTable.getSuccessor().getStart() ? this : null);
-			} catch (NullPointerException | RemoteException e) {
-				logger.logOutput(e.getMessage());
-				f.setNode(f.getStart() == fingerTable.getSuccessor().getStart() ? this : null);
-			}
 		}
 	}
 
