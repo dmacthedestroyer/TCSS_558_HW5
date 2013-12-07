@@ -46,7 +46,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 
 	public RMINode(final int hashLength, final long nodeKey) {
 		long keyspace = (1 << hashLength) - 1;
-		if(nodeKey > keyspace)
+		if (nodeKey > keyspace)
 			throw new IllegalArgumentException(String.format("nodeKey (%s) cannot exceed the max keyspace (%s)", nodeKey, keyspace));
 
 		this.hashLength = hashLength;
@@ -163,7 +163,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 				}
 			}
 		}
-		logger.logOutput("Unable to get value with key " + key + "due to errors" );
+		logger.logOutput("Unable to get value with key " + key + "due to errors");
 		return null;
 	}
 
@@ -188,7 +188,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 					nodeStorage.put(key, value);
 				else
 					server.put(key, value);
-			} catch (NullPointerException | RemoteException e	) {
+			} catch (NullPointerException | RemoteException e) {
 				// some node somewhere is dead... wait a while for our fingers to
 				// correct then try again
 				logger.logOutput("Encountered an error during insert with key " + key + "; " + e.getMessage());
@@ -224,7 +224,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 					nodeStorage.remove(key);
 				else
 					server.delete(key);
-			} catch (NullPointerException | RemoteException e	) {
+			} catch (NullPointerException | RemoteException e) {
 				// some node somewhere is dead... wait a while for our fingers to
 				// correct then try again
 				logger.logOutput("Encountered an error during delete with key " + key + "; " + e.getMessage());
@@ -311,8 +311,8 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	}
 
 	/**
-	 * When the predecessor changes, this function forwards values the new predecessor
-	 * should manage now.
+	 * When the predecessor changes, this function forwards values the new
+	 * predecessor should manage now.
 	 * 
 	 * @param predecessor
 	 * @throws RemoteException
@@ -424,28 +424,6 @@ public class RMINode implements RMINodeServer, RMINodeState {
 			fingerTable.getSuccessor().getNode().checkPredecessor(this);
 		} catch (RemoteException e) {
 			fingerTable.getSuccessor().setNode(this);
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean equals(Object other) {
-		RMINode otherNode;
-		if (other instanceof RMINode) {
-			otherNode = (RMINode) other;
-		} else {
-			return false;
-		}
-		try {
-			if (this.getNodeKey() == otherNode.getNodeKey()) {
-				return true;
-			} else {
-				return false;
-			}
-		} catch (RemoteException e) {
-			return false;
 		}
 	}
 }
