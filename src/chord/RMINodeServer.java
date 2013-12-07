@@ -79,4 +79,11 @@ public interface RMINodeServer extends RMINodeClient {
 	 * @throws RemoteException
 	 */
 	public void checkPredecessor(RMINodeServer potentialPredecessor) throws RemoteException;
+	
+	/**
+	 * Notifies this node that the given leavingNode is exiting the network, so all references to it should be updated
+	 * @param leavingNode
+	 * @throws RemoteException
+	 */
+	public void nodeLeaving(long leavingNodeKey) throws RemoteException;
 }
