@@ -1,7 +1,9 @@
 package gui;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -39,7 +41,7 @@ public class ChordNetworkTable extends JTable {
 			row[1] = node.getPredecessor();
 			for (int k = 0; k < columns.length - 3; k++)
 				row[k + 2] = node.getFingers().get(k);
-			row[columns.length - 1] = node.getValueCount();
+			row[columns.length - 1] = join(node.getValueKeys());
 
 			tableModel.addRow(row);
 		}
@@ -55,7 +57,7 @@ public class ChordNetworkTable extends JTable {
 			private static final long serialVersionUID = 6368136066303131409L;
 
 			{
-				add(new NodeState(0, 0, new ArrayList<Long>(), 0));
+				add(new NodeState(0, 0, new ArrayList<Long>(), new HashSet<Long>()));
 			}
 		});
 	}
@@ -69,5 +71,16 @@ public class ChordNetworkTable extends JTable {
 		columns[numFingers + 2] = "values";
 
 		return columns;
+	}
+
+	private String join(Set<Long> collection) {
+		StringBuilder sb = new StringBuilder();
+
+		for (Long l : collection)
+			sb.append(l + ", ");
+
+		String str = sb.toString();
+		// exclude the last comma and space
+		return str.substring(0, Math.max(0, str.length() - 2));
 	}
 }

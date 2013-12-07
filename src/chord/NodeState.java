@@ -2,6 +2,7 @@ package chord;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents the state of a node in the Chord network. Includes information on
@@ -12,14 +13,15 @@ import java.util.List;
  */
 public class NodeState implements Serializable {
 
-	private long key, predecessor, valueCount;
+	private long key, predecessor;
 	private List<Long> fingers;
+	private Set<Long> valueKeys;
 
-	public NodeState(long key, long predecessor, List<Long> fingers, long valueCount) {
+	public NodeState(long key, long predecessor, List<Long> fingers, Set<Long> valueKeys) {
 		this.key = key;
 		this.predecessor = predecessor;
 		this.fingers = fingers;
-		this.valueCount = valueCount;
+		this.valueKeys = valueKeys;
 	}
 
 	public long getKey() {
@@ -34,7 +36,7 @@ public class NodeState implements Serializable {
 		return fingers;
 	}
 
-	public long getValueCount() {
-		return valueCount;
+	public Set<Long> getValueKeys() {
+		return valueKeys;
 	}
 }

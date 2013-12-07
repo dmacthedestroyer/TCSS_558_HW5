@@ -3,9 +3,12 @@ package chord;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import util.Log;
 
 /**
  * Implements a node in the Chord network.
@@ -91,7 +94,6 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	@Override
 	public NodeState getState() throws RemoteException {
 		checkHasNodeLeft();
-
 		long predecessorNodeKey;
 		try {
 			predecessorNodeKey = predecessor.getNodeKey();
@@ -109,7 +111,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 				fingers.add(f.getStart() * -1);
 			}
 
-		return new NodeState(getNodeKey(), predecessorNodeKey, fingers, nodeStorage.size());
+		return new NodeState(getNodeKey(), predecessorNodeKey, fingers, new HashSet<Long>(nodeStorage.keySet()));
 	}
 
 	/**
@@ -135,7 +137,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	public void leave() throws RemoteException {
 		hasNodeLeft = true;
 		backgroundThread.interrupt();
-		logger.logOutput("Left network and forwarded data to successor");
+		logger.logOutput("Left network");
 	}
 
 	/**
@@ -338,7 +340,6 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		long successorNodeKey;
 		RMINodeServer successor;
 		try {
-			logger.logOutput("Stabilizing finger table");
 			successor = fingerTable.getSuccessor().getNode();
 			successorNodeKey = successor.getNodeKey();
 		} catch (NullPointerException | RemoteException e) {
