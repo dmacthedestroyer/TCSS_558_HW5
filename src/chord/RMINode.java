@@ -134,6 +134,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	@Override
 	public void leave() throws RemoteException {
 		hasNodeLeft = true;
+		backgroundThread.interrupt();
 		logger.logOutput("Left network and forwarded data to successor");
 	}
 
