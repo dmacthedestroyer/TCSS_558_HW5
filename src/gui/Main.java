@@ -113,6 +113,7 @@ public class Main extends JPanel {
 		try {
 			registry = LocateRegistry.getRegistry(host, port);
 		} catch (RemoteException e) {
+			e.printStackTrace();
 			return new ArrayList<NodeState>();
 		}
 
@@ -125,6 +126,7 @@ public class Main extends JPanel {
 						RMINodeState state = (RMINodeState) registry.lookup(name);
 						states.add(state.getState());
 					} catch (RemoteException re) {
+						re.printStackTrace();
 						registry.unbind(name);
 					}
 				}
