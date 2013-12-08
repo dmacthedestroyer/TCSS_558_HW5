@@ -126,7 +126,6 @@ public class Main extends JPanel {
 						RMINodeState state = (RMINodeState) registry.lookup(name);
 						states.add(state.getState());
 					} catch (RemoteException re) {
-						re.printStackTrace();
 						registry.unbind(name);
 					}
 				}
