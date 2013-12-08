@@ -46,7 +46,7 @@ public interface RMINodeServer extends RMINodeClient {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public Serializable get(long key) throws RemoteException;
+	public Serializable get(long key) throws RemoteException, NetworkHosedException;
 
 	/**
 	 * sets the given value at the given key in the network
@@ -55,7 +55,7 @@ public interface RMINodeServer extends RMINodeClient {
 	 * @param value
 	 * @throws RemoteException
 	 */
-	public void put(long key, Serializable value) throws RemoteException;
+	public void put(long key, Serializable value) throws RemoteException, NetworkHosedException;
 
 	/**
 	 * removes the value at the given key in the network
@@ -63,7 +63,7 @@ public interface RMINodeServer extends RMINodeClient {
 	 * @param key
 	 * @throws RemoteException
 	 */
-	public void delete(long key) throws RemoteException;
+	public void delete(long key) throws RemoteException, NetworkHosedException;
 
 	/**
 	 * Finds the successor node for the given key

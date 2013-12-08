@@ -16,7 +16,7 @@ public interface RMINodeClient extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public Serializable get(String key) throws RemoteException;
+	public Serializable get(String key) throws RemoteException, NetworkHosedException;
 	
 	/**
 	 * Sets the value for the given key to the given value
@@ -24,12 +24,12 @@ public interface RMINodeClient extends Remote {
 	 * @param value
 	 * @throws RemoteException
 	 */
-	public void put(String key, Serializable value) throws RemoteException;
+	public void put(String key, Serializable value) throws RemoteException, NetworkHosedException;
 	
 	/**
 	 * Removes the value at the given key
 	 * @param key
 	 * @throws RemoteException
 	 */
-	public void delete(String key) throws RemoteException;
+	public void delete(String key) throws RemoteException, NetworkHosedException;
 }

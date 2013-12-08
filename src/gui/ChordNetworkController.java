@@ -16,6 +16,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import chord.NetworkHosedException;
 import chord.RMINode;
 import chord.RMINodeServer;
 
@@ -224,7 +225,7 @@ public class ChordNetworkController extends JPanel {
 	private void putValue() {
 		try {
 			getNode(txtValueNodeId.getText()).put(Long.parseLong(txtValueId.getText()), txtValueId.getText());
-		} catch (NumberFormatException | RemoteException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -235,7 +236,7 @@ public class ChordNetworkController extends JPanel {
 	private void deleteValue() {
 		try {
 			getNode(txtValueNodeId.getText()).delete(Long.parseLong(txtValueId.getText()));
-		} catch (NumberFormatException | RemoteException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -247,7 +248,7 @@ public class ChordNetworkController extends JPanel {
 	private void getValue() {
 		try {
 			txtValueId.setText((String) getNode(txtValueNodeId.getText()).get(Long.parseLong(txtValueId.getText())));
-		} catch (NumberFormatException | RemoteException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

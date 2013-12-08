@@ -11,6 +11,7 @@ import java.rmi.registry.Registry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import chord.NetworkHosedException;
 import chord.RMINodeClient;
 import util.GenerateMultiNodeNetwork;
 
@@ -33,7 +34,7 @@ public class ChordStorageTest {
 	}
 
 	@Test
-	public void testGetAndPut() throws AccessException, RemoteException, NotBoundException {
+	public void testGetAndPut() throws AccessException, RemoteException, NotBoundException, NetworkHosedException {
 		RMINodeClient client = (RMINodeClient) registry.lookup("node0");
 		String key = "testKey";
 		String value = "testValue";
@@ -43,7 +44,7 @@ public class ChordStorageTest {
 	}
 
 	@Test
-	public void testGetAndPutWithDifferentClients() throws AccessException, RemoteException, NotBoundException {
+	public void testGetAndPutWithDifferentClients() throws AccessException, RemoteException, NotBoundException, NetworkHosedException {
 		RMINodeClient putClient = (RMINodeClient) registry.lookup("node0");
 		String key = "testKey";
 		String value = "testValue";
@@ -55,7 +56,7 @@ public class ChordStorageTest {
 	}
 
 	@Test
-	public void testDelete() throws RemoteException, NotBoundException {
+	public void testDelete() throws RemoteException, NotBoundException, NetworkHosedException {
 		RMINodeClient client = (RMINodeClient) registry.lookup("node0");
 		String key = "testKey";
 		String value = "testValue";
@@ -67,7 +68,7 @@ public class ChordStorageTest {
 	}
 
 	@Test
-	public void testDeleteWithDifferentClients() throws RemoteException, NotBoundException {
+	public void testDeleteWithDifferentClients() throws RemoteException, NotBoundException, NetworkHosedException {
 		RMINodeClient putClient = (RMINodeClient) registry.lookup("node0");
 		String key = "testKey";
 		String value = "testValue";

@@ -47,10 +47,10 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	};
 
 	private void checkBounds(long key) {
-		if(0 > key || key >= keySpace)
+		if (0 > key || key >= keySpace)
 			throw new IllegalArgumentException(String.format("key value (%s) is outside the allowable bounds [0, %s)", key, keySpace));
 	}
-	
+
 	public RMINode(final int hashLength, final long nodeKey) {
 		long keyspace = (1 << hashLength) - 1;
 		if (nodeKey > keyspace)
@@ -147,82 +147,68 @@ public class RMINode implements RMINodeServer, RMINodeState {
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public Serializable get(long key) throws RemoteException {
+	public Serializable get(final long key) throws RemoteException, NetworkHosedException {
 		checkBounds(key);
-		
-		for (int i = 0; i < networkRetries; i++) {
-			checkHasNodeLeft();
-			try {
+		return new Action<Serializable>() {
+
+			@Override
+			Serializable execute() throws RemoteException, NetworkHosedException {
+				checkHasNodeLeft();
 				RMINodeServer server = findSuccessor(key);
 				if (nodeKey == server.getNodeKey())
 					return nodeStorage.get(key);
 				else
 					return server.get(key);
-			} catch (NullPointerException | RemoteException e) {
-				// some node somewhere is dead... wait a while for our fingers to
-				// correct then try again
-				logger.logOutput("Encountered an error during retrieval with key " + key + "; " + e.getMessage());
-				logger.logOutput("Retrying...");
-				try {
-					Thread.sleep(FIX_FINGER_INTERVAL);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
 			}
-		}
-		logger.logOutput("Unable to get value with key " + key + "due to errors");
-		return null;
+		}.getResult();
 	}
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public Serializable get(String key) throws RemoteException {
+	public Serializable get(String key) throws RemoteException, NetworkHosedException {
 		return get(new KeyHash<String>(key, hashLength).getHash());
 	}
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public void put(long key, Serializable value) throws RemoteException {
+	public void put(final long key, final Serializable value) throws RemoteException, NetworkHosedException {
 		checkBounds(key);
-		
-		for (int i = 0; i < networkRetries; i++) {
-			checkHasNodeLeft();
-			try {
+		new Action<Void>() {
+
+			@Override
+			Void execute() throws RemoteException, NetworkHosedException {
+				checkHasNodeLeft();
 				RMINodeServer server = findSuccessor(key);
 				if (nodeKey == server.getNodeKey()) {
 					nodeStorage.put(key, value);
-					try {
-						fingerTable.getSuccessor().getNode().backup(key, value);
-					} catch (Throwable t) {
-					}
+					fingerTable.getSuccessor().getNode().backup(key, value);
 				} else
 					server.put(key, value);
-			} catch (NullPointerException | RemoteException e) {
-				// some node somewhere is dead... wait a while for our fingers to
-				// correct then try again
-				logger.logOutput("Encountered an error during insert with key " + key + "; " + e.getMessage());
-				logger.logOutput("Retrying...");
-				try {
-					Thread.sleep(FIX_FINGER_INTERVAL);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
+
+				return null;
 			}
-		}
-		// tried a bunch of times and failed, throw in the towel.
+		};
 	}
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public void put(String key, Serializable value) throws RemoteException {
+	public void put(String key, Serializable value) throws RemoteException, NetworkHosedException {
 		put(new KeyHash<String>(key, hashLength).getHash(), value);
 	}
 
@@ -235,39 +221,35 @@ public class RMINode implements RMINodeServer, RMINodeState {
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public void delete(long key) throws RemoteException {
+	public void delete(final long key) throws RemoteException, NetworkHosedException {
 		checkBounds(key);
+		new Action<Void>() {
 
-		for (int i = 0; i < networkRetries; i++) {
-			checkHasNodeLeft();
-			try {
+			@Override
+			Void execute() throws RemoteException, NetworkHosedException {
+				checkHasNodeLeft();
 				RMINodeServer server = findSuccessor(key);
 				if (nodeKey == server.getNodeKey())
 					nodeStorage.remove(key);
 				else
 					server.delete(key);
-			} catch (NullPointerException | RemoteException e) {
-				// some node somewhere is dead... wait a while for our fingers to
-				// correct then try again
-				logger.logOutput("Encountered an error during delete with key " + key + "; " + e.getMessage());
-				logger.logOutput("Retrying...");
-				try {
-					Thread.sleep(FIX_FINGER_INTERVAL);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
+
+				return null;
 			}
-		}
-		// tried a bunch of times and failed, throw in the towel.
+		};
 	}
 
 	/**
 	 * {@inheritDoc}
+	 * 
+	 * @throws NetworkHosedException
 	 */
 	@Override
-	public void delete(String key) throws RemoteException {
+	public void delete(String key) throws RemoteException, NetworkHosedException {
 		delete(new KeyHash<String>(key, hashLength).getHash());
 	}
 
@@ -278,7 +260,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	public RMINodeServer findSuccessor(long key) throws RemoteException {
 		checkBounds(key);
 		checkHasNodeLeft();
-		
+
 		long successorNodeKey;
 		try {
 			successorNodeKey = fingerTable.getSuccessor().getNode().getNodeKey();
@@ -385,6 +367,31 @@ public class RMINode implements RMINodeServer, RMINodeState {
 			fingerTable.getSuccessor().getNode().checkPredecessor(this);
 		} catch (RemoteException e) {
 			fingerTable.getSuccessor().setNode(this);
+		}
+	}
+
+	private abstract class Action<T> {
+		private T result;
+
+		abstract T execute() throws RemoteException, NetworkHosedException;
+
+		public Action() throws NetworkHosedException {
+			for (int i = 0; i < networkRetries; i++)
+				try {
+					result = execute();
+					return;
+				} catch (NullPointerException | RemoteException e) {
+					try {
+						Thread.sleep(FIX_FINGER_INTERVAL);
+					} catch (InterruptedException e1) {
+					}
+				}
+
+			throw new NetworkHosedException("The network is hosed");
+		}
+
+		public T getResult() {
+			return result;
 		}
 	}
 }
