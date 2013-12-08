@@ -20,6 +20,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	private static final int FIX_FINGER_INTERVAL = 1000;
 	private final int networkRetries;
 	private final int hashLength;
+	private final long keySpace;
 	private final long nodeKey;
 	private final NodeFileLogger logger;
 	private FingerTable fingerTable;
@@ -47,12 +48,18 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		}
 	};
 
+	private void checkBounds(long key) {
+		if(0 > key || key >= keySpace)
+			throw new IllegalArgumentException(String.format("key value (%s) is outside the allowable bounds [0, %s)", key, keySpace));
+	}
+	
 	public RMINode(final int hashLength, final long nodeKey) {
 		long keyspace = (1 << hashLength) - 1;
 		if (nodeKey > keyspace)
 			throw new IllegalArgumentException(String.format("nodeKey (%s) cannot exceed the max keyspace (%s)", nodeKey, keyspace));
 
 		this.hashLength = hashLength;
+		keySpace = 1 << hashLength;
 		this.nodeKey = nodeKey;
 		networkRetries = hashLength + 1;
 		logger = new NodeFileLogger(nodeKey);
@@ -145,6 +152,8 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	 */
 	@Override
 	public Serializable get(long key) throws RemoteException {
+		checkBounds(key);
+		
 		for (int i = 0; i < networkRetries; i++) {
 			checkHasNodeLeft();
 			try {
@@ -182,6 +191,8 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	 */
 	@Override
 	public void put(long key, Serializable value) throws RemoteException {
+		checkBounds(key);
+		
 		for (int i = 0; i < networkRetries; i++) {
 			checkHasNodeLeft();
 			try {
@@ -229,6 +240,8 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	 */
 	@Override
 	public void delete(long key) throws RemoteException {
+		checkBounds(key);
+
 		for (int i = 0; i < networkRetries; i++) {
 			checkHasNodeLeft();
 			try {
@@ -265,7 +278,9 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	 */
 	@Override
 	public RMINodeServer findSuccessor(long key) throws RemoteException {
+		checkBounds(key);
 		checkHasNodeLeft();
+		
 		long successorNodeKey;
 		try {
 			successorNodeKey = fingerTable.getSuccessor().getNode().getNodeKey();
