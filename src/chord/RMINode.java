@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import util.Log;
-
 /**
  * Implements a node in the Chord network.
  * 
