@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -42,6 +43,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 				}
 				stabilize();
 				fixFinger(fingerTable.getRandomFinger());
+				forwardValuesForBackup();
 			}
 		}
 	};
@@ -126,7 +128,10 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	public void join(RMINodeServer fromNetwork) throws RemoteException {
 		checkHasNodeLeft();
 		if (fromNetwork != null) {
-			fingerTable.getSuccessor().setNode(fromNetwork.findSuccessor(nodeKey));
+			RMINodeServer successor = fromNetwork.findSuccessor(nodeKey);
+			fingerTable.getSuccessor().setNode(successor);
+			successor.checkPredecessor(this);
+
 			logger.logOutput("Joined network");
 		} else {
 			// the network is empty
@@ -193,7 +198,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 				RMINodeServer server = findSuccessor(key);
 				if (nodeKey == server.getNodeKey()) {
 					nodeStorage.put(key, value);
-					fingerTable.getSuccessor().getNode().backup(key, value);
+					fingerTable.getSuccessor().getNode().putBackup(key, value);
 				} else
 					server.put(key, value);
 
@@ -213,10 +218,15 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	}
 
 	@Override
-	public void backup(long key, Serializable value) throws RemoteException {
+	public void putBackup(long key, Serializable value) throws RemoteException {
 		checkHasNodeLeft();
 
 		nodeStorage.put(key, value);
+	}
+
+	@Override
+	public void removeBackup(long key) throws RemoteException {
+		nodeStorage.remove(key);
 	}
 
 	/**
@@ -233,9 +243,10 @@ public class RMINode implements RMINodeServer, RMINodeState {
 			Void execute() throws RemoteException, NetworkHosedException {
 				checkHasNodeLeft();
 				RMINodeServer server = findSuccessor(key);
-				if (nodeKey == server.getNodeKey())
+				if (nodeKey == server.getNodeKey()) {
 					nodeStorage.remove(key);
-				else
+					fingerTable.getSuccessor().getNode().removeBackup(key);
+				} else
 					server.delete(key);
 
 				return null;
@@ -310,12 +321,6 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		try {
 			if (ringRange.isInRange(false, predecessor.getNodeKey(), potentialPredecessorNodeKey, nodeKey, false)) {
 				predecessor = potentialPredecessor;
-				// we're only responsible for our own values, and our predecessor's
-				// values. Prune out the rest.
-				long predecessor_predecessorKey = potentialPredecessor.getPredecessor().getNodeKey();
-				for (Long key : nodeStorage.keySet())
-					if (ringRange.isInRange(false, nodeKey, key, predecessor_predecessorKey, true))
-						nodeStorage.remove(key);
 			}
 		} catch (NullPointerException | RemoteException e) {
 			predecessor = potentialPredecessor;
@@ -344,21 +349,9 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		}
 
 		try {
-			RMINodeServer successor_predecessor = successor.getPredecessor();
-			if (successor_predecessor != null && ringRange.isInRange(false, nodeKey, successor_predecessor.getNodeKey(), successorNodeKey, false))
+			final RMINodeServer successor_predecessor = successor.getPredecessor();
+			if (successor_predecessor != null && ringRange.isInRange(false, nodeKey, successor_predecessor.getNodeKey(), successorNodeKey, false)) {
 				fingerTable.getSuccessor().setNode(successor_predecessor);
-			long predecessorKey;
-			try {
-				predecessorKey = predecessor.getNodeKey();
-			} catch (Throwable t) {
-				predecessorKey = nodeKey;
-			}
-			// we need to forward all values we're responsible for to our new
-			// successor, for them to store as a backup
-			for (Long key : nodeStorage.keySet()) {
-				if (ringRange.isInRange(false, predecessorKey, key, nodeKey, true)) {
-					successor_predecessor.backup(key, nodeStorage.get(key));
-				}
 			}
 		} catch (RemoteException e) {
 		}
@@ -370,24 +363,60 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		}
 	}
 
+	/**
+	 * forward all backed up values we have to our predecessor
+	 */
+	private void forwardValuesForBackup() {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					new Action<Void>() {
+						@Override
+						Void execute() throws RemoteException, NetworkHosedException {
+							long predecessorKey = predecessor.getNodeKey();
+							long predecessorPredecessorKey = predecessor.getPredecessor().getNodeKey();
+							for (Entry<Long, Serializable> pair : nodeStorage.entrySet()) {
+								//send our predecessor its values that we have on backup
+								if (ringRange.isInRange(false, predecessorPredecessorKey, pair.getKey(), predecessorKey, true))
+									predecessor.putBackup(pair.getKey(), pair.getValue());
+								//send our successor our values for them to back up
+								if (ringRange.isInRange(false, predecessorKey, pair.getKey(), nodeKey, true))
+									fingerTable.getSuccessor().getNode().putBackup(pair.getKey(), nodeStorage.get(pair.getKey()));
+								//trim out any excess values from old predecessors
+								if (!ringRange.isInRange(false, predecessorPredecessorKey, pair.getKey(), nodeKey, true))
+									nodeStorage.remove(pair.getKey());
+							}
+							return null;
+						}
+					};
+				} catch (NetworkHosedException e) {
+				}
+			}
+		}).start();
+	}
+
 	private abstract class Action<T> {
 		private T result;
 
 		abstract T execute() throws RemoteException, NetworkHosedException;
 
 		public Action() throws NetworkHosedException {
+			Exception lastException = null;
 			for (int i = 0; i < networkRetries; i++)
 				try {
 					result = execute();
 					return;
 				} catch (NullPointerException | RemoteException e) {
+					lastException = e;
 					try {
 						Thread.sleep(FIX_FINGER_INTERVAL);
 					} catch (InterruptedException e1) {
 					}
 				}
 
-			throw new NetworkHosedException("The network is hosed");
+			throw new NetworkHosedException("The network is hosed", lastException);
 		}
 
 		public T getResult() {

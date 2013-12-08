@@ -8,7 +8,7 @@ public class NetworkHosedException extends Exception {
 	 * @author dmac
 	 * 
 	 */
-	public NetworkHosedException(String message) {
-		super(message);
+	public NetworkHosedException(String message, Throwable cause) {
+		super(message, cause);
 	}
 }

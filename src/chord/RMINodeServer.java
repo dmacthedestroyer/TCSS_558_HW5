@@ -102,5 +102,12 @@ public interface RMINodeServer extends RMINodeClient {
 	 * @param key
 	 * @param value
 	 */
-	public void backup(long key, Serializable value) throws RemoteException;
+	public void putBackup(long key, Serializable value) throws RemoteException;
+	
+	/**
+	 * Remove the backup value at the given location.
+	 * @param key
+	 * @throws RemoteException
+	 */
+	public void removeBackup(long key) throws RemoteException;
 }
