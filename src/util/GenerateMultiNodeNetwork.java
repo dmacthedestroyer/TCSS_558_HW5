@@ -41,7 +41,7 @@ public class GenerateMultiNodeNetwork {
 			
 			for(int i=0; i<nodeCount; i++){
 				RMINode nodeI = new RMINode(m, i);
-				Log.out("" + nodeI.getNodeKey());
+				Log.out("Created node " + nodeI.getNodeKey());
 				registry.bind("node" + nodeI.getNodeKey(), UnicastRemoteObject.exportObject(nodeI, 0));
 				
 				RMINodeServer fromNetwork = null;

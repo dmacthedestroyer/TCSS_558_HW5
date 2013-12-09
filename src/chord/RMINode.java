@@ -197,6 +197,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 				checkHasNodeLeft();
 				RMINodeServer server = findSuccessor(key);
 				if (nodeKey == server.getNodeKey()) {
+					logger.logOutput("Adding value with key " + key);
 					nodeStorage.put(key, value);
 					fingerTable.getSuccessor().getNode().putBackup(key, value);
 				} else
@@ -220,7 +221,7 @@ public class RMINode implements RMINodeServer, RMINodeState {
 	@Override
 	public void putBackup(long key, Serializable value) throws RemoteException {
 		checkHasNodeLeft();
-
+		logger.logOutput("Backed up data with key " + key);
 		nodeStorage.put(key, value);
 	}
 
