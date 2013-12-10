@@ -218,13 +218,18 @@ public class RMINode implements RMINodeServer, RMINodeState {
 		put(new KeyHash<String>(key, hashLength).getHash(), value);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void putBackup(long key, Serializable value) throws RemoteException {
 		checkHasNodeLeft();
-		logger.logOutput("Backed up data with key " + key);
 		nodeStorage.put(key, value);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void removeBackup(long key) throws RemoteException {
 		nodeStorage.remove(key);
